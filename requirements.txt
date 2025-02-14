@@ -8,3 +8,4 @@ reportlab
 pandas
 loguru
 flask
+flask_cors

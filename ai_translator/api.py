@@ -1,10 +1,12 @@
 import os
 from flask import Flask, request, send_file, jsonify
+from flask_cors import CORS
 from model.openai_model import OpenAIModel
 from translator.pdf_translator import PDFTranslator
 from datetime import datetime
 from utils.config_loader import ConfigLoader
 app = Flask(__name__)
+CORS(app)  # 允许所有来源的跨域请求
 
 # 配置上传和输出目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 获取脚本所在目录

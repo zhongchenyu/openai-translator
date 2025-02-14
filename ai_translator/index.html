@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 文件翻译</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        form {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        select, input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        .download-btn {
+            display: flex; /* 使用 Flexbox 布局 */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中（如果需要） */
+            margin-top: 10px; /* 距离上方的距离 */
+        }
+
+        .download-btn button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .download-btn button:hover {
+            background-color: #0056b3;
+        }
+
+        .submit-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 5px;
+        }
+
+        .submit-btn-container button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .submit-btn-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .submit-btn-container button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">PDF 文件翻译</h1>
+    <form id="translationForm">
+        <!-- 模型类型 -->
+        <label for="model_type">模型类型：</label>
+        <select id="model_type" name="model_type" required>
+            <option value="OpenAIModel">OpenAIModel</option>
+            <option value="GLMModel">GLMModel</option>
+        </select>
+
+        <!-- 模型名称 -->
+        <label for="model_name">模型名称：</label>
+        <select id="model_name" name="model_name" required>
+            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            <option value="gpt-4">gpt-4</option>
+        </select>
+
+        <!-- 文件格式 -->
+        <label for="file_format">文件格式：</label>
+        <select id="file_format" name="file_format" required>
+            <option value="pdf">PDF</option>
+            <option value="Markdown">Markdown</option>
+        </select>
+
+        <!-- 文件上传 -->
+        <label for="file">选择 PDF 文件：</label>
+        <input type="file" id="file" name="file" accept=".pdf" required />
+
+        <!-- 提交按钮 -->
+        <div class="submit-btn-container">
+            <button type="submit" id="submitButton">提交</button>
+        </div>
+
+        <!-- 下载按钮 -->
+        <div class="download-btn hidden" id="downloadSection">
+            <button  type="button" id="downloadButton">下载文件</button>
+        </div>
+    </form>
+
+    <script>
+        const form = document.getElementById('translationForm');
+        const submitButton = document.getElementById('submitButton');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadButton = document.getElementById('downloadButton');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // 阻止默认提交行为
+
+            downloadSection.classList.add('hidden');
+            submitButton.disabled = true;
+            submitButton.style.backgroundColor = '#ccc';
+            submitButton.textContent = '处理中...';
+
+
+            const formData = new FormData();
+            formData.append('model_type', document.getElementById('model_type').value);
+            formData.append('model_name', document.getElementById('model_name').value);
+            formData.append('file_format', document.getElementById('file_format').value);
+            formData.append('file', document.getElementById('file').files[0]);
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 20000); // 20秒超时
+
+                const response = await fetch('http://111.119.239.150:8081/upload', {
+                    method: 'POST',
+                    body: formData,
+                    //mode: 'no-cors', // 禁用 CORS
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+                console.log(response)
+
+                const result = await response.json();
+                console.log(result)
+                if (!response.ok) {
+                    throw new Error(`${result.error}`);
+                }
+
+                downloadSection.classList.remove('hidden');
+                downloadButton.onclick = () => {
+                    window.location.href = `http://111.119.239.150:8081${result.download_url}`;
+                };
+
+                // alert(result.message);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    alert('请求超时，请稍后再试！');
+                } else {
+                    alert(`请求失败：${error.message}`);
+                }
+            } finally {
+                submitButton.disabled = false;
+                submitButton.style.backgroundColor = '#007bff';
+                submitButton.textContent = '提交';
+            }
+        });
+    </script>
+</body>
+</html>
