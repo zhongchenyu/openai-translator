@@ -65,7 +65,7 @@ class Writer:
                             ('FONTNAME', (0, 1), (-1, -1), 'SimSun'),  # 更改表格中的字体为 "SimSun"
                             ('GRID', (0, 0), (-1, -1), 1, colors.black)
                         ])
-                        pdf_table = Table(table.values.tolist())
+                        pdf_table = Table([table.columns.tolist()] + table.values.tolist())
                         pdf_table.setStyle(table_style)
                         story.append(pdf_table)
             # Add a page break after each page except the last one

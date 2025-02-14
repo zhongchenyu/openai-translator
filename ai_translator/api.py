@@ -62,7 +62,7 @@ def upload_file():
     file.save(input_file_path)
 
     # 构造输出文件路径
-    output_filename = f"{os.path.splitext(filename)[0]}_{current_time}.{file_format}"
+    output_filename = f"{os.path.splitext(filename)[0]}_{current_time}.{'md' if file_format.lower()=='markdown' else file_format}"
     output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
 
 
@@ -71,7 +71,10 @@ def upload_file():
     # 实例化 PDFTranslator 类，并调用 translate_pdf() 方法
     model = OpenAIModel(model=model_name, api_key=api_key)
     translator = PDFTranslator(model)
-    translator.translate_pdf(input_file_path, file_format,output_file_path=output_path)
+    try:
+        translator.translate_pdf(input_file_path, file_format,output_file_path=output_path)
+    except Exception as e:
+        return jsonify({"error":"Translate fail"}), 500
 
     # 返回下载链接
     download_url = f"/download/{output_filename}"

@@ -16,6 +16,7 @@ class OpenAIModel(Model):
     def make_request(self, prompt):
         attempts = 0
         while attempts < 3:
+            attempts += 1
             try:
                 if self.model == "gpt-3.5-turbo":
                     response = self.client.chat.completions.create(
@@ -36,7 +37,7 @@ class OpenAIModel(Model):
 
                 return translation, True
             except openai.RateLimitError as e:
-                attempts += 1
+                # attempts += 1
                 if attempts < 3:
                     LOG.warning("Rate limit reached. Waiting for 60 seconds before retrying.")
                     time.sleep(60)
