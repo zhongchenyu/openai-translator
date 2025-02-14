@@ -38,8 +38,8 @@ def upload_file():
     model_name = request.form.get('model_name', config['OpenAIModel']['model'])
     api_key = request.form.get('openai_api_key', config['OpenAIModel']['api_key'] or os.getenv('OPENAI_API_KEY'))
     file_format = request.form.get('file_format',None)
-
-    if not (model_name and api_key and file_format):
+    target_language = request.form.get('target_language', None)
+    if not (model_name and api_key and file_format and target_language):
         return jsonify({'error': 'missing params'}), 400
 
     # 检查是否有文件上传
@@ -72,7 +72,7 @@ def upload_file():
     model = OpenAIModel(model=model_name, api_key=api_key)
     translator = PDFTranslator(model)
     try:
-        translator.translate_pdf(input_file_path, file_format,output_file_path=output_path)
+        translator.translate_pdf(input_file_path, file_format,target_language=target_language,output_file_path=output_path)
     except Exception as e:
         return jsonify({"error":"Translate fail"}), 500
 

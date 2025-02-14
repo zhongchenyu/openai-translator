@@ -34,6 +34,9 @@ class Content:
 class TableContent(Content):
     def __init__(self, data, translation=None):
         df = pd.DataFrame(data)
+        LOG.debug(df)
+        df = df.map(lambda x: [item.replace(' ', '') for item in x] if isinstance(x, list) else x)
+        LOG.debug(df)
 
         # Verify if the number of rows and columns in the data and DataFrame object match
         if len(data) != len(df) or len(data[0]) != len(df.columns):
