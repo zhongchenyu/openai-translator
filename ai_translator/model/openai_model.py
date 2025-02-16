@@ -18,7 +18,7 @@ class OpenAIModel(Model):
         while attempts < 3:
             attempts += 1
             try:
-                if self.model == "gpt-3.5-turbo":
+                if self.model in {"gpt-3.5-turbo",'gpt-4','gpt-4o-mini','gpt-4o'}:
                     response = self.client.chat.completions.create(
                         model=self.model,
                         messages=[
