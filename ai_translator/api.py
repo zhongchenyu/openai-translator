@@ -5,6 +5,7 @@ from model.openai_model import OpenAIModel
 from translator.pdf_translator import PDFTranslator
 from datetime import datetime
 from utils.config_loader import ConfigLoader
+from utils.logger import LOG
 app = Flask(__name__)
 CORS(app)  # 允许所有来源的跨域请求
 
@@ -72,8 +73,9 @@ def upload_file():
     model = OpenAIModel(model=model_name, api_key=api_key)
     translator = PDFTranslator(model)
     try:
-        translator.translate_pdf(input_file_path, file_format,target_language=target_language,output_file_path=output_path)
+        translator.translate_pdf_formated(input_file_path, file_format,target_language=target_language,output_file_path=output_path)
     except Exception as e:
+        LOG.error(e)
         return jsonify({"error":"Translate fail"}), 500
 
     # 返回下载链接
