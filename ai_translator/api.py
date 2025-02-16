@@ -43,33 +43,24 @@ def upload_file():
     if not (model_name and api_key and file_format and target_language):
         return jsonify({'error': 'missing params'}), 400
 
-    # 检查是否有文件上传
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
     file = request.files['file']
 
-    # 检查文件名是否为空
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    # 检查文件扩展名是否允许
     if not allowed_file(file.filename):
         return jsonify({"error": "File type not allowed"}), 400
 
-    # 保存上传的文件
     filename =file.filename
     input_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(input_file_path)
 
-    # 构造输出文件路径
     output_filename = f"{os.path.splitext(filename)[0]}_{current_time}.{'md' if file_format.lower()=='markdown' else file_format}"
     output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
 
-
-    print("processing translation...")
-
-    # 实例化 PDFTranslator 类，并调用 translate_pdf() 方法
     model = OpenAIModel(model=model_name, api_key=api_key)
     translator = PDFTranslator(model)
     try:
@@ -78,7 +69,6 @@ def upload_file():
         LOG.error(e)
         return jsonify({"error":"Translate fail"}), 500
 
-    # 返回下载链接
     download_url = f"/download/{output_filename}"
     # 清理临时文件
     if os.path.exists(input_file_path):

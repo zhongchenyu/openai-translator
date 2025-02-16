@@ -37,35 +37,43 @@ class PDFTranslator:
     def translate_pdf_formated(self,pdf_file_path: str, file_format: str = 'PDF', target_language: str = '中文', output_file_path: str = None, pages: Optional[int] = None):
         if file_format.lower()=='pdf':
             pdf_text = self.collect_pdf_text(pdf_file_path)
-            content = Content(ContentType.TEXT,json.dumps(list(pdf_text)))
+            pdf_text = list(set(pdf_text))
+            content = Content(ContentType.TEXT,json.dumps(pdf_text))
             prompt = self.model.translate_prompt(content, target_language)
             LOG.debug(prompt)
-            translation, status = self.model.make_request(prompt)
-            if not status:
-                LOG.error('make request fail!')
-                raise Exception('make request fail!')
-            else:
-                LOG.info(translation)
-            translation_dict = dict(zip(pdf_text,json.loads(translation)))
+            attempt = 0
+            max_time = 5
+            while attempt<=max_time:
+                attempt += 1
+                translation, status = self.model.make_request(prompt)
+                if not status:
+                    LOG.error('make request fail!')
+                    raise Exception('make request fail!')
+                else:
+                    LOG.info(translation)
+                translation_list = json.loads(translation)
+                if translation_list != pdf_text and len(pdf_text)==len(translation_list):
+                    break
+                else:
+
+                    LOG.info(f'request {attempt} time(s), {"not translate" if translation_list == pdf_text else "miss content"}')
+                    LOG.debug(f"translation_list==pdf_text:{translation_list==pdf_text},len(pdf_text):{len(pdf_text)},len(translation_list):{len(translation_list)}")
+                    if attempt>=max_time:
+                        raise Exception('receive wrong translation content!')
+                    LOG.info("retry...")
+            translation_dict = dict(zip(pdf_text,translation_list))
 
             # shutil.copy(pdf_file_path, output_file_path)
-            self.replace_pdf_text(pdf_file_path,output_file_path,translation_dict)
+            self.replace_pdf_text(pdf_file_path,output_file_path,translation_dict,target_language)
 
         else:
             self.translate_pdf(pdf_file_path, file_format, target_language, output_file_path, pages)
 
 
     def collect_pdf_text(self, input_pdf_path):
-        """
-        替换 PDF 中的文本，保留原格式和布局
-        :param input_pdf_path: 输入 PDF 路径
-        :param output_pdf_path: 输出 PDF 路径
-        :param translation_dict: 翻译字典，格式为 {原文本: 翻译后文本}
-        """
         doc = pymupdf.open(input_pdf_path)
-        pdf_text = set()
+        pdf_text = []
         for page in doc:
-            # 获取所有文本块及其属性
             blocks = page.get_text("dict", flags=pymupdf.TEXT_PRESERVE_IMAGES)["blocks"]
 
             for block in blocks:
@@ -73,25 +81,18 @@ class PDFTranslator:
                     for line in block["lines"]:
                         for span in line["spans"]:
                             original_text = span["text"]
-                            pdf_text.add(original_text)
+                            pdf_text.append(original_text)
         doc.close()
         LOG.debug(f"pdf_text: {pdf_text}")
         return pdf_text
 
-    def replace_pdf_text(self,input_pdf_path,output_pdf_path,translation_dict):
-        """
-        替换 PDF 中的文本，保留原格式和布局
-        :param input_pdf_path: 输入 PDF 路径
-        :param output_pdf_path: 输出 PDF 路径
-        :param translation_dict: 翻译字典，格式为 {原文本: 翻译后文本}
-        """
+    def replace_pdf_text(self,input_pdf_path,output_pdf_path,translation_dict,target_language):
         LOG.debug(f"translation_dict: \n")
-        for k,v in translation_dict.items():
-            LOG.debug(f"{k} --- {v}")
+        # for k,v in translation_dict.items():
+        #     LOG.debug(f"{k} --- {v}")
         doc = pymupdf.open(input_pdf_path)
 
         for page in doc:
-            # 获取所有文本块及其属性
             blocks = page.get_text("dict", flags=pymupdf.TEXT_PRESERVE_IMAGES)["blocks"]
 
             for block in blocks:
@@ -99,11 +100,12 @@ class PDFTranslator:
                     for line in block["lines"]:
                         for span in line["spans"]:
                             original_text = span["text"]
-                            font = self.get_safe_font(span["font"])
+                            font = self.get_safe_font(span["font"],target_language)
+                            # LOG.debug(f"font: {font}")
                             color = self.decode_color(span["color"])  # 转换颜色值
 
                             new_text = translation_dict.get(original_text,original_text)
-                            print(original_text,' ||| ',new_text)
+                            LOG.debug(f"{original_text} ||| {new_text}")
 
                             # 删除原文本
                             rect = pymupdf.Rect(span["bbox"])
@@ -122,20 +124,22 @@ class PDFTranslator:
                             )
 
         # 保存修改后的 PDF（保留图片、表格等非文本内容）
-        doc.save(output_pdf_path, ) # incremental=True, garbage=4, deflate=True
+        doc.save(output_pdf_path, )
         doc.close()
 
-    def get_safe_font(self,fontname):
+    def get_safe_font(self,fontname,target_language):
         base14_fonts = [
             "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
             "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
             "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
             "Symbol", "ZapfDingbats"
         ]
-        if fontname in base14_fonts:
+        if target_language in {'中文','日语'}:
+            return {'fontname': "SimSum", 'fontfile': "fonts/simsun.ttc"}
+        elif fontname in base14_fonts:
             return {'fontname': fontname, "fontfile": None}
         else:
-            return {'fontname': "SimSum", 'fontfile': "fonts/simsun.ttc"}
+            return {'fontname': "helv", 'fontfile': None}
 
     def decode_color(self,color_int):
         """

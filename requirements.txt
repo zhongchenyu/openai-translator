@@ -9,5 +9,4 @@ pandas
 loguru
 flask
 flask_cors
-fitz
-frontend
+PyMuPDF
