@@ -2,3 +2,4 @@
 ai_translator/files
 logs
 env
+__pycache__
