@@ -165,7 +165,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
 
-                const response = await fetch('http://111.119.239.150:8081/upload', {
+                const response = await fetch('http://127.0.0.1:8081/upload', {
                     method: 'POST',
                     body: formData,
                     //mode: 'no-cors', // 禁用 CORS
@@ -183,7 +183,7 @@
 
                 downloadSection.classList.remove('hidden');
                 downloadButton.onclick = () => {
-                    window.location.href = `http://111.119.239.150:8081${result.download_url}`;
+                    window.location.href = `http://127.0.0.1:8081${result.download_url}`;
                 };
 
                 // alert(result.message);
